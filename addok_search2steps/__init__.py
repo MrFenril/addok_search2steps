@@ -38,6 +38,7 @@ def preconfigure(config):
 
 def multiple_search(queries, **args):
     if len(queries) > 0:
+        trace("QUERY", queries)
         # print("multiple_search query: " + str(queries), flush=True)
         return max([search(query, **args) for query in queries], key=lambda x: x and len(x) > 0 and x[0].score or 0)
     else:
@@ -134,7 +135,7 @@ def search2steps(config, query1, queries2, autocomplete, limit, **filters):
         trace("###### RESULTS FULL")
         trace("Filter: ", filters)
         results_full = multiple_search([q + ' ' + query1 for q in queries2], limit=limit, autocomplete=autocomplete, **filters)
-        trace("Results: ")
+        trace("Results: ", results_full)
         pp.pprint(results_full)
 
     for result in results_full:
@@ -149,7 +150,8 @@ def search2steps(config, query1, queries2, autocomplete, limit, **filters):
     if ret:
         # Sort results to make highest scores appears first
         # Then make result uniq in case of duplicates
-        return make_uniq(sorted(ret, key=lambda k: k.score, reverse=True))
+        trace("res send: ", makeUniq(sorted(ret, key=lambda k: k.score, reverse=True)[0:limit]))
+        return makeUniq(sorted(ret, key=lambda k: k.score, reverse=True)[0:limit])
     else:
         return results1[0:limit]
 
@@ -211,6 +213,11 @@ class Search2Steps(View):
                 # => "37 Rue des lilas 33000 bordeaux"
                 trace("FULL TEXT")
                 results = multiple_search(q, limit=limit, autocomplete=False, lat=lat, lon=lon, **filters)
+                trace("Req: ", req)
+                trace("Filters: ", filters)
+                # trace("LAT: ", results[0].lat)
+                # trace("LON: ", results[0].lon)
+                trace("Results: ", results)
                 query = '|'.join(q)
             else:
                 # 2Steps query
@@ -224,6 +231,7 @@ class Search2Steps(View):
         if not results:
             log_notfound(query)
         log_query(query, results)
+
         self.to_geojson(req, resp, results, query=query, filters=filters, center=center, limit=limit)
 
 
